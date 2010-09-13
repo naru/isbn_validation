@@ -82,6 +82,58 @@ module Zerosum
         end
       end
     end
+
+    module IssnValidation
+
+      ISSN_REGEX = /^(?:\d[\ |-]?){7}[\d|X]$/
+
+      def validates_issn(*attr_names)
+        configuration = { 
+          :message => "is not a valid ISSN code"
+        }
+
+        configuration.update(attr_names.extract_options!)
+        validates_each(attr_names, configuration) do |record, attr_name, value|
+          valid = validate_with_issn(value)
+          record.errors.add(attr_name, configuration[:message]) unless valid
+        end
+      end
+
+      def validate_with_issn(issn) #:nodoc:
+        if (issn || '').match(ISSN_REGEX)
+          issn_values = issn.upcase.gsub(/\ |-/, '').split('')
+          check_digit = issn_values.last # last digit is check digit
+          check_digit = (check_digit == 'X') ? 10 : check_digit.to_i
+
+          sum = 0
+          issn_values.each_with_index do |value, index|
+            sum += (issn_values.length - index) * value.to_i
+          end
+          sum += 10 if (check_digit == 10)
+
+          (sum % 11) == 0
+        else
+          false
+        end
+      end
+    end
+
+    module IsmnValidation
+
+      ISMN_REGEX = /^(?:\d[\ |-]?){7}[\d|X]$/
+
+      def validates_ismn(*attr_names)
+        configuration = {
+          :message => "is not a valid ISMN code"
+        }
+
+        configuration.update(attr_names.extract_options!)
+        validates_each(attr_names, configuration) do |record, attr_name, value|
+          valid = validate_with_isbn13(value) # uses same validation as isbn13
+          record.errors.add(attr_name, configuration[:message]) unless valid
+        end
+      end
+    end
   end
 end
 
